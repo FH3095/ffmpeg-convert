@@ -35,8 +35,8 @@ def getUserOptions(config):
     return preset, removeAllMetadata
 
 
-def runProcess(cmdLine):
-    result = subprocess.run(cmdLine, check=False, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
+def runProcess(cmdLine, cwd):
+    result = subprocess.run(cmdLine, cwd=cwd, check=False, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
     with outputLock:
         log.info("Finished %s. Result: %i %s", cmdLine, result.returncode, result.stdout)
     result.check_returncode()
@@ -45,13 +45,14 @@ def runProcess(cmdLine):
 def convertVideoFile(formatConfig, inputFile, tmpFile):
     cmd = formatConfig["FFmpegPath"] + " " + formatConfig["PrependToCmd"] + " " + formatConfig["Cmd"] + " "
     cmd = cmd + formatConfig["AppendToCmd"] + " \"{TEMP_FILE}\""
-    cmd = cmd.format(FFMPEG_PATH=formatConfig["FFmpegPath"], INPUT_FILE=inputFile, TEMP_FILE=tmpFile)
-    runProcess(cmd)
+    cmd = cmd.format(FFMPEG_PATH=formatConfig["FFmpegPath"], INPUT_FILE=inputFile, TEMP_FILE=tmpFile, TEMP_BASE=tmpFile.with_suffix(""))
+    runProcess(cmd, tmpFile.parent)
+
 
 def extractMetadata(formatConfig, inputFile, metadataFile):
     cmd = formatConfig["FFmpegPath"] + " " + formatConfig["MetadataExtract"]
     cmd = cmd.format(FFMPEG_PATH=formatConfig["FFmpegPath"], INPUT_FILE=inputFile, METADATA_FILE=metadataFile)
-    runProcess(cmd)
+    runProcess(cmd, metadataFile.parent)
     allowedMetaTags = ["#", ";"] + formatConfig["MetadataCopy"].split()
     metaOut = []
     with codecs.open(metadataFile, "r", "utf-8") as metaFile:
@@ -62,10 +63,11 @@ def extractMetadata(formatConfig, inputFile, metadataFile):
     with codecs.open(metadataFile, "w", "utf-8") as metaFile:
         metaFile.writelines(metaOut)
 
+
 def insertMetadata(formatConfig, tmpFile, metadataFile, outputFile):
     cmd = formatConfig["FFmpegPath"] + " " + formatConfig["MetadataInsert"]
     cmd = cmd.format(FFMPEG_PATH=formatConfig["FFmpegPath"], TEMP_FILE=tmpFile, METADATA_FILE=metadataFile, OUTPUT_FILE=outputFile)
-    runProcess(cmd)
+    runProcess(cmd, tmpFile.parent)
 
 
 ConvertEntry = namedtuple("ConvertEntry", ["relativeFile", "inFile", "tmpFile", "metadataFile", "outFile"])
@@ -82,6 +84,7 @@ def convertOneFile(formatConfig, removeAllMetadata, entry):
         insertMetadata(formatConfig, entry.tmpFile, entry.metadataFile, entry.outFile)
     else:
         shutil.copy(entry.tmpFile, entry.outFile)
+
 
 def convertAllFiles(formatConfig, removeAllMetaData):
     inDir = pathlib.Path(formatConfig["InDir"]).absolute()
@@ -108,6 +111,7 @@ def convertAllFiles(formatConfig, removeAllMetaData):
             shutil.rmtree(child)
         else:
             child.unlink()
+
 
 
 outputLock = RLock()

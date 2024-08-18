@@ -36,7 +36,8 @@ def getUserOptions(config):
 
 
 def runProcess(cmdLine, cwd):
-    result = subprocess.run(cmdLine, cwd=cwd, check=False, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
+    result = subprocess.run(cmdLine, cwd=cwd, check=False, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True,
+                            creationflags=subprocess.BELOW_NORMAL_PRIORITY_CLASS)
     log.debug("Finished %s. Result: %i %s", cmdLine, result.returncode, result.stdout)
     result.check_returncode()
 
@@ -89,6 +90,7 @@ def convertOneFile(formatConfig, filterMetadata, entry):
 
 
 def convertAllFiles(formatConfig, filterMetadata):
+    onlyCopyFileEndings = set(formatConfig["OnlyCopyFileEndings"].split())
     inDir = pathlib.Path(formatConfig["InDir"]).absolute()
     tmpDir = pathlib.Path(formatConfig["TmpDir"]).absolute()
     outDir = pathlib.Path(formatConfig["OutDir"]).absolute()
@@ -98,8 +100,14 @@ def convertAllFiles(formatConfig, filterMetadata):
         relativeFile = file.relative_to(inDir)
         tmpFile = tmpDir.joinpath(relativeFile).with_suffix("."+formatConfig["FileEnding"])
         metadataFile = tmpDir.joinpath(relativeFile).with_suffix(".txt")
-        outFile = outDir.joinpath(relativeFile).with_suffix("."+formatConfig["FileEnding"])
-        entries.append(ConvertEntry(relativeFile, file, tmpFile, metadataFile, outFile))
+        if file.suffix in onlyCopyFileEndings:
+            outFile = outDir.joinpath(relativeFile)
+            log.info("Copy without converting %s", relativeFile)
+            outFile.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy(file, outFile)
+        else:
+            outFile = outDir.joinpath(relativeFile).with_suffix("."+formatConfig["FileEnding"])
+            entries.append(ConvertEntry(relativeFile, file, tmpFile, metadataFile, outFile))
     entries = tuple(sorted(entries))
     with concurrent.futures.ThreadPoolExecutor(max_workers=int(formatConfig["FFmpegInstances"])) as executor:
         jobs = list()

@@ -36,8 +36,7 @@ def getUserOptions(config):
 
 
 def runProcess(cmdLine, cwd):
-    result = subprocess.run(cmdLine, cwd=cwd, check=False, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True,
-                            creationflags=subprocess.BELOW_NORMAL_PRIORITY_CLASS)
+    result = subprocess.run(cmdLine, cwd=cwd, check=False, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
     log.debug("Finished %s. Result: %i %s", cmdLine, result.returncode, result.stdout)
     result.check_returncode()
 

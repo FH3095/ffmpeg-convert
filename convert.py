@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 from collections import namedtuple
-import codecs,sys,configparser,subprocess,pathlib,logging,shutil,concurrent.futures
+import sys,configparser,subprocess,pathlib,logging,shutil,concurrent.futures
 
 
 def getUserOptions(config):
@@ -54,7 +54,7 @@ def extractMetadata(formatConfig, inputFile, metadataFile):
     runProcess(cmd, metadataFile.parent)
     allowedMetaTags = formatConfig["MetadataFilterWhitelist"].split()
     metaOut = []
-    with codecs.open(metadataFile, "r", "utf-8") as metaFile:
+    with open(metadataFile, mode="r", encoding="utf-8") as metaFile:
         for line in metaFile:
             if line.startswith("#") or line.startswith(";"):
                 metaOut.append(line)
@@ -63,7 +63,7 @@ def extractMetadata(formatConfig, inputFile, metadataFile):
                     if line.startswith(tag + "="):
                         metaOut.append(line)
                         break
-    with codecs.open(metadataFile, "w", "utf-8") as metaFile:
+    with open(metadataFile, mode="w", encoding="utf-8") as metaFile:
         metaFile.writelines(metaOut)
 
 
@@ -124,7 +124,7 @@ def convertAllFiles(formatConfig, filterMetadata):
 
 
 config = configparser.ConfigParser()
-with codecs.open("settings.ini", "r", "utf-8") as configFile:
+with open("settings.ini", mode="r", encoding="utf-8") as configFile:
     config.read_file(configFile)
 
 sysoutHandler = logging.StreamHandler(stream=sys.stdout)

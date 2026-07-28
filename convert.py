@@ -56,11 +56,11 @@ def extractMetadata(formatConfig, inputFile, metadataFile):
     metaOut = []
     with open(metadataFile, mode="r", encoding="utf-8") as metaFile:
         for line in metaFile:
-            if line.startswith("#") or line.startswith(";"):
+            if line.startswith("#") or line.startswith(";") or line.startswith("["):
                 metaOut.append(line)
             else:
                 for tag in allowedMetaTags:
-                    if line.startswith(tag + "="):
+                    if line.lower().startswith(tag.lower() + "="):
                         metaOut.append(line)
                         break
     with open(metadataFile, mode="w", encoding="utf-8") as metaFile:
